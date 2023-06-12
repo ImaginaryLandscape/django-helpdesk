@@ -1815,6 +1815,11 @@ class CustomField(models.Model):
         ('slug', _('Slug')),
     )
 
+    WIDGET_TYPE_CHOICES = (
+        (helpdesk_settings.CUSTOMFIELD_WIDGET_DROPDOWN, _('Dropdown')),
+        (helpdesk_settings.CUSTOMFIELD_WIDGET_RADIO_OR_CHECKBOX, _('Radio buttons or checkboxes')),
+    )
+
     data_type = models.CharField(
         _('Data Type'),
         max_length=100,
@@ -1847,6 +1852,21 @@ class CustomField(models.Model):
         help_text=_('For list fields only. Enter one option per line.'),
         blank=True,
         null=True,
+    )
+
+    multiselect = models.BooleanField(
+        _('Enable multiple selections?'),
+        default=False,
+        help_text=_('For list fields only.'),
+    )
+    
+    widget_type = models.CharField(
+        _('Widget Choice'),
+        max_length=20,
+        help_text=_('For list fields only.'),
+        choices=WIDGET_TYPE_CHOICES,
+        default=helpdesk_settings.CUSTOMFIELD_WIDGET_DROPDOWN,
+        null=True
     )
 
     ordering = models.IntegerField(

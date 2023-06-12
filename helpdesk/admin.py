@@ -87,7 +87,22 @@ if helpdesk_settings.HELPDESK_KB_ENABLED:
 
 @admin.register(CustomField)
 class CustomFieldAdmin(admin.ModelAdmin):
-    list_display = ('name', 'label', 'data_type')
+    list_display = ('name', 'label', 'get_data_type')
+
+    def get_data_type(self, obj):
+        if obj.data_type == 'list':
+            if obj.multiselect is True:
+                if obj.widget_type == helpdesk_settings.CUSTOMFIELD_WIDGET_DROPDOWN:
+                    return "List (multiselect)"
+                else:
+                    return "List (multiselect, checkboxes)"
+            else:
+                if obj.widget_type == helpdesk_settings.CUSTOMFIELD_WIDGET_DROPDOWN:
+                    return "List"
+                else:
+                    return "List (radio buttons)"
+        else:
+            return obj.get_data_type_display()
 
 
 @admin.register(EmailTemplate)

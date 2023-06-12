@@ -21,7 +21,7 @@ from helpdesk.models import (Ticket, Queue, FollowUp, IgnoreEmail, TicketCC,
                              CustomField, TicketCustomFieldValue, TicketDependency, UserSettings)
 from helpdesk import settings as helpdesk_settings
 from helpdesk.settings import CUSTOMFIELD_TO_FIELD_DICT, CUSTOMFIELD_DATETIME_FORMAT, \
-    CUSTOMFIELD_DATE_FORMAT, CUSTOMFIELD_TIME_FORMAT
+    CUSTOMFIELD_DATE_FORMAT, CUSTOMFIELD_TIME_FORMAT, CUSTOMFIELD_WIDGET_DROPDOWN
 
 if helpdesk_settings.HELPDESK_KB_ENABLED:
     from helpdesk.models import (KBItem)
@@ -57,7 +57,16 @@ class CustomFieldMixin(object):
         elif field.data_type == 'list':
             fieldclass = forms.ChoiceField
             instanceargs['choices'] = field.get_choices()
-            instanceargs['widget'] = forms.Select(attrs={'class': 'form-control'})
+            if field.multiselect:
+                if field.widget_type == CUSTOMFIELD_WIDGET_DROPDOWN:
+                    instanceargs['widget'] = forms.SelectMultiple(attrs={'class': 'form-control'})
+                else:  # We assume checkboxes
+                    instanceargs['widget'] = forms.CheckboxSelectMultiple(attrs={'class': 'form-control'})
+            else:
+                if field.widget_type == CUSTOMFIELD_WIDGET_DROPDOWN:
+                    instanceargs['widget'] = forms.Select(attrs={'class': 'form-control'})
+                else:  # We assume radio buttons
+                    instanceargs['widget'] = forms.RadioSelect(attrs={'class': 'form-control'})
         else:
             # Try to use the immediate equivalences dictionary
             try:
