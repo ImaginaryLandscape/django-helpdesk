@@ -87,7 +87,8 @@ if helpdesk_settings.HELPDESK_KB_ENABLED:
 
 @admin.register(CustomField)
 class CustomFieldAdmin(admin.ModelAdmin):
-    list_display = ('name', 'label', 'get_data_type')
+    list_display = ('name', 'label', 'get_data_type', 'ordering')
+    list_editable = ["ordering"]
 
     def get_data_type(self, obj):
         if obj.data_type == 'list':
