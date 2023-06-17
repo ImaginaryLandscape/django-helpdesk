@@ -1803,6 +1803,7 @@ class CustomField(models.Model):
         ('varchar', _('Character (single line)')),
         ('text', _('Text (multi-line)')),
         ('integer', _('Integer')),
+        ('positiveinteger', _('Positive Integer')),
         ('decimal', _('Decimal')),
         ('list', _('List')),
         ('boolean', _('Boolean (checkbox yes/no)')),
@@ -1883,6 +1884,14 @@ class CustomField(models.Model):
         return choices
     choices_as_array = property(_choices_as_array)
 
+    # If you define a custom public ticket form by overriding "HELPDESK_PUBLIC_TICKET_FORM_CLASS",
+    # you can assign values to hidden fields in your custom form's "clean()" method.
+    hidden = models.BooleanField(
+        _('Hidden?'),
+        help_text=_('This field will be hidden from the user. A value can be assigned in your custom code.'),
+        default=False,
+    )
+
     required = models.BooleanField(
         _('Required?'),
         help_text=_('Does the user have to enter a value for this field?'),
@@ -1918,6 +1927,7 @@ class CustomField(models.Model):
             'varchar': serializers.CharField,
             'text': serializers.CharField,
             'integer': serializers.IntegerField,
+            'positiveinteger': serializers.IntegerField,
             'decimal': serializers.DecimalField,
             'list': serializers.ChoiceField,
             'boolean': serializers.BooleanField,

@@ -35,7 +35,7 @@ class CustomFieldMixin(object):
     Mixin that provides a method to turn CustomFields into an actual field
     """
 
-    def customfield_to_field(self, field, instanceargs):
+    def customfield_to_field(self, field, instanceargs, is_public_facing=True):
         # Use TextInput widget by default
         instanceargs['widget'] = forms.TextInput(attrs={'class': 'form-control'})
         # if-elif branches start with special cases
@@ -46,23 +46,27 @@ class CustomFieldMixin(object):
             fieldclass = forms.CharField
             instanceargs['widget'] = forms.Textarea(attrs={'class': 'form-control'})
             instanceargs['max_length'] = field.max_length
-        elif field.data_type == 'integer':
+        elif field.data_type in ('integer', 'positiveinteger'):
             fieldclass = forms.IntegerField
-            instanceargs['widget'] = forms.NumberInput(attrs={'class': 'form-control'})
+            attrs = {'class': 'form-control'}
+            if field.data_type == 'positiveinteger':
+                attrs.update({'min': 0})
+            instanceargs['widget'] = forms.NumberInput(attrs=attrs)
         elif field.data_type == 'decimal':
             fieldclass = forms.DecimalField
             instanceargs['decimal_places'] = field.decimal_places
             instanceargs['max_digits'] = field.max_length
             instanceargs['widget'] = forms.NumberInput(attrs={'class': 'form-control'})
         elif field.data_type == 'list':
-            fieldclass = forms.ChoiceField
             instanceargs['choices'] = field.get_choices()
             if field.multiselect:
+                fieldclass = forms.MultipleChoiceField
                 if field.widget_type == CUSTOMFIELD_WIDGET_DROPDOWN:
                     instanceargs['widget'] = forms.SelectMultiple(attrs={'class': 'form-control'})
                 else:  # We assume checkboxes
                     instanceargs['widget'] = forms.CheckboxSelectMultiple(attrs={'class': 'form-control'})
             else:
+                fieldclass = forms.ChoiceField
                 if field.widget_type == CUSTOMFIELD_WIDGET_DROPDOWN:
                     instanceargs['widget'] = forms.Select(attrs={'class': 'form-control'})
                 else:  # We assume radio buttons
@@ -85,6 +89,9 @@ class CustomFieldMixin(object):
                 # The data_type was not found anywhere
                 raise NameError("Unrecognized data_type %s" % field.data_type)
 
+        # Hide hidden inputs, unless this is a staff member editing the form.
+        if field.hidden and is_public_facing:
+            instanceargs['widget'] = forms.HiddenInput()
         self.fields['custom_%s' % field.name] = fieldclass(**instanceargs)
 
 
@@ -133,7 +140,7 @@ class EditTicketForm(CustomFieldMixin, forms.ModelForm):
                 'initial': initial_value,
             }
 
-            self.customfield_to_field(field, instanceargs)
+            self.customfield_to_field(field, instanceargs, is_public_facing=False)
 
     def save(self, *args, **kwargs):
 
