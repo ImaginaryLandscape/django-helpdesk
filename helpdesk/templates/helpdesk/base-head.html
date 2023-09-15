@@ -44,9 +44,11 @@
 
 {% if user.id %}
 <!-- RSS -->
+{% comment "We don't need these, and the 'url' call fails when the user's email (with an '@' sign) is used as the username" %}
 <link rel='alternate' href='{% url 'helpdesk:rss_user' user.get_username %}' type='application/rss+xml' title='{% trans "My Open Tickets" %}' />
 <link rel='alternate' href='{% url 'helpdesk:rss_activity' %}' type='application/rss+xml' title='{% trans "All Recent Activity" %}' />
 <link rel='alternate' href='{% url 'helpdesk:rss_unassigned' %}' type='application/rss+xml' title='{% trans "Unassigned Tickets" %}' />
+{% endcomment %}
 
 <style type="text/css">
 /* hide google translate top bar */
