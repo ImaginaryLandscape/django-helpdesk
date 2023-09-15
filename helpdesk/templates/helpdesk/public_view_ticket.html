@@ -22,9 +22,15 @@
     </tr>
 {% endif %}
 
+{% comment %}
 <tr>
     <th>{% trans "Submitter E-Mail" %}</th>
     <td>{{ ticket.submitter_email }}</td>
+</tr>
+{% endcomment %}
+<tr>
+    <th>{% trans "Submitter" %}</th>
+    <td>{{ ticket.submitter_username }}</td>
 </tr>
 
 <tr>

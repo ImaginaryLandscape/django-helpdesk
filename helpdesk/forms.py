@@ -253,7 +253,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
         # this procedure is re-defined for public submission form
         return Queue.objects.get(id=int(self.cleaned_data['queue']))
 
-    def _create_ticket(self):
+    def _create_ticket(self, user):
         queue = self._get_queue()
         kbitem = None
         if 'kbitem' in self.cleaned_data:
@@ -262,6 +262,7 @@ class AbstractTicketForm(CustomFieldMixin, forms.Form):
         ticket = Ticket(
             title=self.cleaned_data['title'],
             submitter_email=self.cleaned_data['submitter_email'],
+            submitter_user=user,
             created=timezone.now(),
             status=Ticket.OPEN_STATUS,
             queue=queue,
@@ -362,7 +363,7 @@ class TicketForm(AbstractTicketForm):
         Writes and returns a Ticket() object
         """
 
-        ticket, queue = self._create_ticket()
+        ticket, queue = self._create_ticket(user)
         if self.cleaned_data['assigned_to']:
             try:
                 u = User.objects.get(id=self.cleaned_data['assigned_to'])
@@ -458,7 +459,7 @@ class PublicTicketForm(AbstractTicketForm):
         """
         Writes and returns a Ticket() object
         """
-        ticket, queue = self._create_ticket()
+        ticket, queue = self._create_ticket(user)
         if queue.default_owner and not ticket.assigned_to:
             ticket.assigned_to = queue.default_owner
         ticket.save()

@@ -13,9 +13,8 @@ from django.core.exceptions import (
     ObjectDoesNotExist, PermissionDenied, ImproperlyConfigured,
 )
 from django.urls import reverse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render
-from urllib.parse import quote
 from django.utils.translation import gettext as _
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -109,10 +108,9 @@ class BaseCreateTicketView(abstract_views.AbstractCreateTicketMixin, FormView):
         else:
             ticket = form.save(user=self.request.user if self.request.user.is_authenticated else None)
             try:
-                return HttpResponseRedirect('%s?ticket=%s&email=%s&key=%s' % (
+                return HttpResponseRedirect('%s?ticket=%s&key=%s' % (
                     reverse('helpdesk:public_view'),
                     ticket.ticket_for_url,
-                    quote(ticket.submitter_email),
                     ticket.secret_key)
                 )
             except ValueError:
@@ -162,37 +160,34 @@ class Homepage(CreateTicketView):
 
 def search_for_ticket(request, error_message=None):
     if hasattr(settings, 'HELPDESK_VIEW_A_TICKET_PUBLIC') and settings.HELPDESK_VIEW_A_TICKET_PUBLIC:
-        email = request.GET.get('email', None)
         return render(request, 'helpdesk/public_view_form.html', {
             'ticket': False,
-            'email': email,
             'error_message': error_message,
             'helpdesk_settings': helpdesk_settings,
         })
     else:
-        raise PermissionDenied("Public viewing of tickets without a secret key is forbidden.")
+        # The request might have a secret key, making the error below inappropriate. Better to just raise a 404.
+        raise Http404
+        # raise PermissionDenied("Public viewing of tickets without a secret key is forbidden.")
 
 
 @protect_view
 def view_ticket(request):
     ticket_req = request.GET.get('ticket', None)
-    email = request.GET.get('email', None)
     key = request.GET.get('key', '')
+    user_id = request.user.id  # This will exist bc uic_dash middleware requires login for this view
 
-    if not (ticket_req and email):
-        if ticket_req is None and email is None:
-            return search_for_ticket(request)
-        else:
-            return search_for_ticket(request, _('Missing ticket ID or e-mail address. Please try again.'))
+    if not ticket_req:
+        return search_for_ticket(request)
 
     queue, ticket_id = Ticket.queue_and_id_from_query(ticket_req)
     try:
         if hasattr(settings, 'HELPDESK_VIEW_A_TICKET_PUBLIC') and settings.HELPDESK_VIEW_A_TICKET_PUBLIC:
-            ticket = Ticket.objects.get(id=ticket_id, submitter_email__iexact=email)
+            ticket = Ticket.objects.get(id=ticket_id, submitter_user_id=user_id)
         else:
-            ticket = Ticket.objects.get(id=ticket_id, submitter_email__iexact=email, secret_key__iexact=key)
+            ticket = Ticket.objects.get(id=ticket_id, submitter_user_id=user_id, secret_key__iexact=key)
     except (ObjectDoesNotExist, ValueError):
-        return search_for_ticket(request, _('Invalid ticket ID or e-mail address. Please try again.'))
+        return search_for_ticket(request, _('Invalid ticket ID. Please try again.'))
 
     if is_helpdesk_staff(request.user):
         redirect_url = reverse('helpdesk:view', args=[ticket_id])
@@ -223,7 +218,6 @@ def view_ticket(request):
 
     return render(request, 'helpdesk/public_view_ticket.html', {
         'key': key,
-        'mail': email,
         'ticket': ticket,
         'helpdesk_settings': helpdesk_settings,
         'next': redirect_url,

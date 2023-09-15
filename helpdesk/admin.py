@@ -26,19 +26,19 @@ class QueueAdmin(admin.ModelAdmin):
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = ('title', 'status', 'assigned_to', 'queue',
-                    'hidden_submitter_email', 'time_spent')
+                    'hidden_submitter', 'time_spent')
     date_hierarchy = 'created'
     list_filter = ('queue', 'assigned_to', 'status')
 
-    def hidden_submitter_email(self, ticket):
-        if ticket.submitter_email:
-            username, domain = ticket.submitter_email.split("@")
+    def hidden_submitter(self, ticket):
+        if "@" in ticket.submitter_username:
+            username, domain = ticket.submitter_username.split("@")
             username = username[:2] + "*" * (len(username) - 2)
             domain = domain[:1] + "*" * (len(domain) - 2) + domain[-1:]
             return "%s@%s" % (username, domain)
         else:
-            return ticket.submitter_email
-    hidden_submitter_email.short_description = _('Submitter E-Mail')
+            return ticket.submitter_username
+    hidden_submitter.short_description = _('Submitter')
 
     def time_spent(self, ticket):
         return ticket.time_spent

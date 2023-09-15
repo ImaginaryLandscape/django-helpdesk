@@ -505,6 +505,15 @@ class Ticket(models.Model):
         help_text=_('Date this ticket was most recently changed.'),
     )
 
+    submitter_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tickets_submitted',
+        blank=True,
+        null=True,
+        verbose_name=_('Submitter'),
+    )
+
     submitter_email = models.EmailField(
         _('Submitter E-Mail'),
         blank=True,
@@ -594,6 +603,10 @@ class Ticket(models.Model):
         blank=True
     )
 
+    @property
+    def submitter_username(self):
+        return getattr(self.submitter_user, "username", "No user")
+    
     @property
     def time_spent(self):
         """Return back total time spent on the ticket. This is calculated value
@@ -729,12 +742,11 @@ class Ticket(models.Model):
             protocol = 'https'
         else:
             protocol = 'http'
-        return u"%s://%s%s?ticket=%s&email=%s&key=%s" % (
+        return u"%s://%s%s?ticket=%s&key=%s" % (
             protocol,
             site.domain,
             reverse('helpdesk:public_view'),
             self.ticket_for_url,
-            self.submitter_email,
             self.secret_key
         )
     ticket_url = property(_get_ticket_url)
@@ -776,10 +788,11 @@ class Ticket(models.Model):
 
     def get_submitter_userprofile(self):
         User = get_user_model()
-        try:
-            return User.objects.get(email=self.submitter_email)
-        except (User.DoesNotExist, User.MultipleObjectsReturned):
-            return None
+        if self.submitter_user:
+            try:
+                return User.objects.get(id=self.submitter_user)
+            except (User.DoesNotExist):
+                return None
 
     class Meta:
         get_latest_by = "created"
