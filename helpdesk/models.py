@@ -790,7 +790,7 @@ class Ticket(models.Model):
         User = get_user_model()
         if self.submitter_user:
             try:
-                return User.objects.get(id=self.submitter_user)
+                return User.objects.get(id=self.submitter_user.id)
             except (User.DoesNotExist):
                 return None
 
